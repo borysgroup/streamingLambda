@@ -17,36 +17,31 @@ them out of the public repo follows the practice established in PR 2.
   x86-64, avoiding the ARM-build 502 from PR 2).
 - **Env vars:** `YOUTUBE_TOKEN_S3_BUCKET`, `YOUTUBE_TOKEN_S3_KEY` = `token/token.pickle`
   (read by `chalicelib/ytb_api_utils.py`).
-- **Function URL:** created with auth type `NONE` + resource policy `FunctionURLAllowPublicAccess`
-  (`lambda:InvokeFunctionUrl`, principal `*`, condition `lambda:FunctionUrlAuthType = NONE`) —
-  same shape as the prior working setup. **However, anonymous invokes currently return
-  `403 AccessDeniedException` account-wide** (a trivial control function's public URL 403s
-  identically, config verified correct, waited >10 min for propagation). This account is brand new
-  (Lambda concurrency limit still 10), so this looks like a new/unverified-account restriction or
-  an organization-level control on public function URLs — something only the root user can see or
-  lift (check AWS Health Dashboard / Support, or Organizations policies if the account is in one).
-  Retrieve the URL with:
+- **Function URL:** auth type `NONE`, **publicly reachable and working** (verified 2026-07-08,
+  second session). The initial `FunctionURLAllowPublicAccess` statement (`lambda:InvokeFunctionUrl`,
+  principal `*`, condition `lambda:FunctionUrlAuthType = NONE`) alone produced
+  `403 AccessDeniedException` on this account; the console's own hint held the fix — this account
+  also requires `lambda:InvokeFunction` for principal `*`. That statement
+  (`FunctionURLAllowInvokeAction`, condition `lambda:InvokedViaFunctionUrl = true`) was added
+  manually via the console and anonymous invokes now succeed. Retrieve the URL with:
 
   ```bash
   aws lambda get-function-url-config --function-name picam-lambda-function \
     --query FunctionUrl --output text
   ```
 
-## API Gateway HTTP API (working public endpoint)
+## API Gateway HTTP API (alternate public endpoint)
 
-Because of the function-URL block above, a **HTTP API** (`picam-http-api`, API Gateway v2
-quick-create: `$default` stage, auto-deploy, `$default` route → Lambda proxy) fronts the function
-and **works today** — verified `400` on an invalid action and the expected token-404 `500` on
-`create`. The Lambda resource policy grants `lambda:InvokeFunction` to `apigateway.amazonaws.com`
-scoped to this API's `execute-api` ARN. Use this endpoint as `LAMBDA_FUNCTION_URL` (the request/response contract is identical
-for the Pi). Retrieve it with:
+While the function URL was 403ing, a **HTTP API** (`picam-http-api`, API Gateway v2
+quick-create: `$default` stage, auto-deploy, `$default` route → Lambda proxy) was stood up to
+front the function; it also works. The Lambda resource policy grants `lambda:InvokeFunction` to
+`apigateway.amazonaws.com` scoped to this API's `execute-api` ARN. The request/response contract
+is identical through either endpoint. Now that the bare function URL works, **either** can be
+`LAMBDA_FUNCTION_URL`; the HTTP API can be deleted if you prefer the function URL. Retrieve it with:
 
 ```bash
 aws apigatewayv2 get-apis --query 'Items[?Name==`picam-http-api`].ApiEndpoint' --output text
 ```
-
-If/when the function-URL restriction is lifted, either endpoint works; the HTTP API can then be
-deleted if you prefer the bare function URL.
 
 ## Execution role
 
@@ -61,26 +56,30 @@ deleted if you prefer the bare function URL.
 ## S3 token bucket
 
 - Region `us-east-2`, all four public-access blocks on, default SSE-S3 (AES256) encryption.
-- Currently **empty** — the pipeline is blocked on the `token.pickle` upload (see below).
+- Holds a **dummy placeholder** at `token/token.pickle` (a 104-byte pickled dict tagged
+  `DUMMY PLACEHOLDER`, uploaded 2026-07-08) so the S3 path is exercised end-to-end; it must be
+  overwritten with the real Google OAuth `token.pickle` before streams can be created.
 - Find the name with `aws s3 ls`, or read the function's `YOUTUBE_TOKEN_S3_BUCKET` env var.
 
-## Verified state (2026-07-08)
+## Verified state (2026-07-08, second session)
 
-- Invalid-action probe → clean `400` (imports fine on `python3.12`, handler healthy).
-- `create` probe → `500` with S3 **404** `HeadObject … Not Found` on the token object — exactly
-  the expected failure while the pickle doesn't exist yet; the S3 wiring and role permissions are
-  correct (a permissions problem would surface as 403, as it did in PR 2).
+- Anonymous invalid-action probe **via the bare function URL** → clean `400` (public access works).
+- `create` probe → `500` `'dict' object has no attribute 'expired'` — the Lambda successfully
+  downloaded and unpickled the placeholder from S3 and failed only where real Google credentials
+  are needed. Every layer (URL → Lambda → role → S3) is verified; only the real token is missing.
 
 ## Remaining steps (blocked on inputs)
 
-1. **`token.pickle`** — upload to `s3://<TOKEN_BUCKET>/token/token.pickle`, or add it (base64) as
-   a repo secret so the agent can upload and run the download/refresh/re-upload tests
-   (PR 2, comment No. 46).
-2. **`LAMBDA_FUNCTION_URL` secret** — set to the **HTTP API endpoint** (see the API Gateway
-   section above — the bare function URL is blocked for now), for the Pi's `my_secrets.py` and the
-   agent env.
-3. **Region env var** — `AWS_REGION` reaches the agent env but is currently **empty**; set it (or
-   `AWS_DEFAULT_REGION`) to `us-east-2`.
+1. **`token.pickle`** — overwrite the placeholder at `s3://<TOKEN_BUCKET>/token/token.pickle`
+   with the real one, or add it (base64: `base64 -w 0 token.pickle` on Linux,
+   `base64 -i token.pickle` on macOS) as a repo secret so the agent can upload and run the
+   download/refresh/re-upload tests (PR 2, comment No. 46).
+2. **`LAMBDA_FUNCTION_URL` secret** — set to either the function URL or the HTTP API endpoint
+   (both work now), for the Pi's `my_secrets.py` and the agent env.
+3. **Region env var** — the resources are in **`us-east-2`** (us-east-1 holds nothing).
+   `claude.yml` doesn't currently pass `AWS_REGION` through to the agent env, so add
+   `AWS_REGION: us-east-2` (a literal value is fine — the region isn't secret) to the `env:`
+   block of the `Run Claude Code` step; the agent cannot edit workflow files itself.
 4. **Camera** — Pi-side setup (`device.py`, `device.service`, crontab 8-hour chunk reboots,
    watchdog/heartbeat) once SSH access is granted; the playbook is in
    [`ac-training-lab-picam-suggestions.md`](./ac-training-lab-picam-suggestions.md) and the PR 2 archive.
