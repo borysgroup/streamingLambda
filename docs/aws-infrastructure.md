@@ -17,14 +17,36 @@ them out of the public repo follows the practice established in PR 2.
   x86-64, avoiding the ARM-build 502 from PR 2).
 - **Env vars:** `YOUTUBE_TOKEN_S3_BUCKET`, `YOUTUBE_TOKEN_S3_KEY` = `token/token.pickle`
   (read by `chalicelib/ytb_api_utils.py`).
-- **Function URL:** auth type `NONE` + resource policy `FunctionURLAllowPublicAccess`
+- **Function URL:** created with auth type `NONE` + resource policy `FunctionURLAllowPublicAccess`
   (`lambda:InvokeFunctionUrl`, principal `*`, condition `lambda:FunctionUrlAuthType = NONE`) —
-  same shape as the prior working setup. Retrieve it with:
+  same shape as the prior working setup. **However, anonymous invokes currently return
+  `403 AccessDeniedException` account-wide** (a trivial control function's public URL 403s
+  identically, config verified correct, waited >10 min for propagation). This account is brand new
+  (Lambda concurrency limit still 10), so this looks like a new/unverified-account restriction or
+  an organization-level control on public function URLs — something only the root user can see or
+  lift (check AWS Health Dashboard / Support, or Organizations policies if the account is in one).
+  Retrieve the URL with:
 
   ```bash
   aws lambda get-function-url-config --function-name picam-lambda-function \
     --query FunctionUrl --output text
   ```
+
+## API Gateway HTTP API (working public endpoint)
+
+Because of the function-URL block above, a **HTTP API** (`picam-http-api`, API Gateway v2
+quick-create: `$default` stage, auto-deploy, `$default` route → Lambda proxy) fronts the function
+and **works today** — verified `400` on an invalid action and the expected token-404 `500` on
+`create`. The Lambda resource policy grants `lambda:InvokeFunction` to `apigateway.amazonaws.com`
+scoped to this API's `execute-api` ARN. Use this endpoint as `LAMBDA_FUNCTION_URL` (the request/response contract is identical
+for the Pi). Retrieve it with:
+
+```bash
+aws apigatewayv2 get-apis --query 'Items[?Name==`picam-http-api`].ApiEndpoint' --output text
+```
+
+If/when the function-URL restriction is lifted, either endpoint works; the HTTP API can then be
+deleted if you prefer the bare function URL.
 
 ## Execution role
 
@@ -54,8 +76,9 @@ them out of the public repo follows the practice established in PR 2.
 1. **`token.pickle`** — upload to `s3://<TOKEN_BUCKET>/token/token.pickle`, or add it (base64) as
    a repo secret so the agent can upload and run the download/refresh/re-upload tests
    (PR 2, comment No. 46).
-2. **`LAMBDA_FUNCTION_URL` secret** — set from the `get-function-url-config` output above, for the
-   Pi's `my_secrets.py` and the agent env.
+2. **`LAMBDA_FUNCTION_URL` secret** — set to the **HTTP API endpoint** (see the API Gateway
+   section above — the bare function URL is blocked for now), for the Pi's `my_secrets.py` and the
+   agent env.
 3. **Region env var** — `AWS_REGION` reaches the agent env but is currently **empty**; set it (or
    `AWS_DEFAULT_REGION`) to `us-east-2`.
 4. **Camera** — Pi-side setup (`device.py`, `device.service`, crontab 8-hour chunk reboots,
