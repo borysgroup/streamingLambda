@@ -13,6 +13,11 @@ What it deliberately cannot do: manage IAM users/groups or credentials (no `iam:
 
 What was intentionally **not** created: access keys and a console login profile. No secret material exists for this user yet.
 
+> **Status 2026-07-08:** handoff complete. An access key for `stream-manager` now reaches the
+> agent environment, `aws sts get-caller-identity` returns the `stream-manager` ARN, and the
+> root-level access key was deleted. The infrastructure this user was created to build is
+> documented in [`aws-infrastructure.md`](./aws-infrastructure.md).
+
 ## Handoff (root user does this)
 
 1. **Access key:** AWS console → IAM → Users → `stream-manager` → Security credentials → Create access key → "Application running outside AWS".
