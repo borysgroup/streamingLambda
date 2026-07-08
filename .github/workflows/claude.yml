@@ -30,12 +30,12 @@ jobs:
         with:
           fetch-depth: 1
 
-      - name: Connect to Tailscale
-        uses: tailscale/github-action@v2
-        with:
-          oauth-client-id: ${{ secrets.TS_OAUTH_CLIENT_ID }}
-          oauth-secret: ${{ secrets.TS_OAUTH_SECRET }}
-          tags: tag:stream-cam-test
+      # - name: Connect to Tailscale
+      #   uses: tailscale/github-action@v2
+      #   with:
+      #     oauth-client-id: ${{ secrets.TS_OAUTH_CLIENT_ID }}
+      #     oauth-secret: ${{ secrets.TS_OAUTH_SECRET }}
+      #     tags: tag:stream-cam-test
 
       - name: Run Claude Code
         id: claude
