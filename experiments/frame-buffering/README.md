@@ -103,3 +103,14 @@ frame count stopped rising, it handed the camera back to `device.service`
 
 So this run shows nothing about 8 h longevity either way. A fair rerun would use a camera without WiFi errors and wrap `option_a.py` in a restart
 loop, the way `device.py` wraps ffmpeg.
+
+### Why `cam-syyd`? Six weeks of YouTube history
+
+`device.py` starts a new broadcast every time it starts, so the channel's 771 past broadcasts show when each camera was live
+([`data/youtube_broadcasts.csv`](data/youtube_broadcasts.csv), [`plot_uptime.py`](plot_uptime.py)). The journals only cover the current boot.
+
+![uptime_youtube](uptime_youtube.png)
+
+`cam-syyd` has been live 72.9 % of the time since it came online on Aug 19. The other five were live 98.5–99.9 % of the time since Aug 12. Only
+104 of its 142 broadcasts started at a cron reboot, and it regularly dropped off for most of an 8 h window, then came back at the next reboot. So its
+WiFi problem is long-standing, which matches the `brcmf_sdio` errors, and it is not caused by option A.
