@@ -16,4 +16,4 @@ sudo install -m 644 stream-watchdog.service stream-watchdog.timer /etc/systemd/s
 sudo systemctl daemon-reload && sudo systemctl enable --now stream-watchdog.timer
 ```
 
-Logs: `journalctl -t stream-watchdog`. Stop the timer before pausing `device.service` for longer than about 3 minutes.
+Logs: `journalctl -t stream-watchdog`. Stopping `device.service` is safe. If you run tests that leave it active but not streaming, stop the timer first.
