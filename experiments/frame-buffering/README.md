@@ -81,9 +81,25 @@ picamera2's `FfmpegOutput`. A raised limit ran for over 11 h in a fork, but that
 ([issue 231](https://github.com/AccelerationConsortium/ac-dev-lab/issues/231)), so any stream only has to survive 8 h.
 
 How A here differs: it starts its own ffmpeg and writes to its stdin with `FileOutput`, so `thread_queue_size` and the ffmpeg flags are under our control.
-It does not use `FfmpegOutput`. One risk still applies. If the RTMP leg stalls, the blocked pipe write can also stall the encoder, and with it the stills.
-A production version should keep `device.py`'s restart loop around the whole process.
+It does not use `FfmpegOutput`. If the RTMP leg stalls, the blocked pipe write could in principle stall the encoder and the stills with it. In the long run below it did not:
+stills still came back during a ~6 min upload stall. A production version should still keep `device.py`'s restart loop around the whole process.
 
-20 minutes says nothing about 8 hours. [`scripts/longrun_a.sh`](scripts/longrun_a.sh) was left running A to YouTube on the A camera until its next
-cron reboot (05:00 MDT, about 4 h). Once a minute it logs the frame count, CPU, temperature and memory, and every 5 min it takes a still
-(`~/buftest/longrun/frames.csv` on the Pi). If the frame count stops rising, it hands back to `device.service`.
+20 minutes says nothing about 8 hours, so [`scripts/longrun_a.sh`](scripts/longrun_a.sh) was left running A to YouTube on the A camera
+(`cam-syyd`) until its next cron reboot. Once a minute it logged the frame count, CPU, temperature and memory, and every 5 min it took a still. If the
+frame count stopped rising, it handed the camera back to `device.service`
+([`data/longrun_option_a.csv`](data/longrun_option_a.csv)).
+
+**It stopped after 24 min, because the camera's WiFi went down, not because of picamera2.**
+
+- 01:07–01:25 MDT: a steady 900 frames/min (15 fps), CPU 15–17 %, 59 °C, no throttling, ~160 MB free. Stills took 0.05–0.13 s.
+- From 01:21 the kernel logged `brcmfmac: brcmf_sdio_*` errors from the Pi's WiFi chip, and from 01:28 about 12 per minute. The RTMP upload slowed
+  and then failed with `Connection timed out`. wlan0 only came back with a new DHCP lease at 01:40.
+- The same errors show up on this camera while production owns it: 75 errors at 00:23–00:24, when production's ffmpeg died with `Broken pipe` and
+  `device.py` restarted it, and more at 22:48, 23:03, 02:02 and later. The other five cameras logged **zero** `brcmf_sdio` errors this boot
+  ([`data/longrun_cam3_wifi_errors.csv`](data/longrun_cam3_wifi_errors.csv)). This points to a hardware or RF problem specific to `cam-syyd`.
+- The still endpoint kept working while the upload was stalled: 0.04 s at 01:26 and 0.24 s at 01:31. picamera2 itself never failed.
+- The handback was slow. The stall was detected at 01:31, but `sudo systemctl start device.service` only ran at 01:40, once the network was back
+  (sudo probably waited on DNS). Production reconnected at 01:40 and has been up since.
+
+So this run shows nothing about 8 h longevity either way. A fair rerun would use a camera without WiFi errors and wrap `option_a.py` in a restart
+loop, the way `device.py` wraps ffmpeg.
