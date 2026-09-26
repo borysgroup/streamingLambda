@@ -1,5 +1,6 @@
 OUT=/tmp/buftest; mkdir -p $OUT
 TSIP=$(tailscale ip -4 | head -1)
+YT=$(cat ~/buftest/.yturl)   # device.py's current rtmp ingest URL (not committed)
 VF="hflip,vflip,drawtext=fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf:fontsize=18:fontcolor=white:box=1:boxcolor=black@0.5:boxborderw=5:x=10:y=10:text='%{localtime\:%Y-%m-%d_%H-%M-%S}'"
 YT_ENC=(-vf "$VF" -c:v libx264 -preset ultrafast -g 30 -c:a aac -b:a 128k -async 1 -vsync cfr)
 AUDIO=(-f lavfi -i anullsrc=channel_layout=stereo:sample_rate=44100)

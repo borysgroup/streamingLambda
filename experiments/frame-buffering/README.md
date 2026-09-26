@@ -40,9 +40,50 @@ Raw numbers: [`data/`](data). Example stills: [`snapshots/`](snapshots). Scripts
 
 ## Gotchas found
 
-- A: the picamera2 still is **not flipped**. `device.py` applies `hflip,vflip` in ffmpeg, so A needs `Transform(hflip=1, vflip=1)` in the camera config.
+- A: the picamera2 still is **not flipped**. `device.py` applies `hflip,vflip` in ffmpeg, so A needs `Transform(hflip=1, vflip=1)` in the camera config (now in `option_a.py`).
 - A: the flv from picamera2's H.264 reported ~6100 packets over 239 s. That points to ffmpeg guessing 25 fps on the raw pipe and `-vsync cfr` padding frames.
-  Pass `-framerate 15` on the input.
+  `-framerate 15` on the input was not enough; `-r 15` on the output fixed it (now in `option_a.py`).
 - B: `runOnReady` is deprecated in MediaMTX v1.21 (use `runOnAvailable`). Also, the hook script must be executable, or MediaMTX silently never starts it.
 - The tests wrote their files to `/tmp`, which is tmpfs (RAM). MemAvailable fell by about 80–110 MB over each run. For a long-running deployment, put
   segments/recordings on the SD card or cap them.
+
+## Re-run live to YouTube
+
+Same three cameras, but each option now pushes to the camera's real (unlisted) broadcast instead of a local flv. `device.service` was paused and its
+current RTMP ingest URL reused (`enableAutoStop` is off, so the broadcast stays up). YouTube stream health was polled every 30 s through the Data API
+([`data/youtube_health.csv`](data/youtube_health.csv)). A ran for 20 min and B/C for 5 min, all at the same time. A now uses the full-FOV `2304:1296` sensor mode
+(like `SENSOR_MODE` in `device.py`; picamera2 otherwise picks the cropped 1536x864 mode), `Transform(hflip=1, vflip=1)`, and `-r 15`.
+
+![results_youtube](results_youtube.png)
+
+| | A (20 min) | B (5 min) | C (5 min) |
+|---|---|---|---|
+| Frames sent / duration | 17907 / 1193.8 s = **15.0 fps** (5 dup, 30 drop) | 4392 / 292.8 s = 15.0 fps | 4456 / 297.1 s = 15.0 fps |
+| YouTube health polls "good" | 37/37 | 8/9 | 8/9 |
+| Mean CPU (baseline 15.4 %) | **16.4 %** | 17.0 % | 19.9 % |
+| Max temp / throttling | 60.1 °C / 0x0 | 53.7 °C / 0x0 | 46.2 °C / 0x0 |
+| Snapshot round-trip, median | 0.52 s (on-Pi 0.04 s), 45 stills | 2.82 s | 0.14 s |
+| Still | **1536x864, full FOV, upright** | 640x360 | 640x360 |
+
+- **A is now the cheapest of the three.** The extra ~7 points of CPU in the first trial came from ffmpeg encoding ~30 fps with duplicated frames. With
+  `-r 15` it is about 1 point above the production baseline. MemAvailable settles at ~150 MB about 3 minutes in and then stays flat.
+- The one non-"good" poll for B and C was a single `noData` 2 min into the run. The only issue YouTube reported was `audioBitrateLow`, which production has too.
+- C: 1 of 8 `latest.jpg` fetches came back truncated (8 KB) because the file was read while ffmpeg was rewriting it. `option_c.sh` now passes
+  `-atomic_writing 1` (not re-run).
+
+### Longevity (picamera2)
+
+picamera2 was tried twice in ac-dev-lab and dropped both times:
+[issue 161](https://github.com/AccelerationConsortium/ac-dev-lab/issues/161) (picamera2 streams died over a weekend while the `libcamera-vid` ones
+survived), [issue 213](https://github.com/AccelerationConsortium/ac-dev-lab/issues/213), and
+[PR 485](https://github.com/AccelerationConsortium/ac-dev-lab/pull/485). In the second try, ffmpeg's input `thread_queue_size` filled up when fed by
+picamera2's `FfmpegOutput`. A raised limit ran for over 11 h in a fork, but that fork was never deployed. Production now uses a cron reboot every 8 h
+([issue 231](https://github.com/AccelerationConsortium/ac-dev-lab/issues/231)), so any stream only has to survive 8 h.
+
+How A here differs: it starts its own ffmpeg and writes to its stdin with `FileOutput`, so `thread_queue_size` and the ffmpeg flags are under our control.
+It does not use `FfmpegOutput`. One risk still applies. If the RTMP leg stalls, the blocked pipe write can also stall the encoder, and with it the stills.
+A production version should keep `device.py`'s restart loop around the whole process.
+
+20 minutes says nothing about 8 hours. [`scripts/longrun_a.sh`](scripts/longrun_a.sh) was left running A to YouTube on the A camera until its next
+cron reboot (05:00 MDT, about 4 h). Once a minute it logs the frame count, CPU, temperature and memory, and every 5 min it takes a still
+(`~/buftest/longrun/frames.csv` on the Pi). If the frame count stops rising, it hands back to `device.service`.
