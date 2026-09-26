@@ -1,0 +1,6 @@
+[Unit]
+Description=RTMP stall watchdog for device.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/stream-watchdog.sh
