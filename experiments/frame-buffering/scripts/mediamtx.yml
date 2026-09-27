@@ -1,0 +1,17 @@
+logLevel: warn
+rtmp: no
+hls: no
+webrtc: no
+srt: no
+rtspAddress: :8554
+rtspTransports: [tcp]
+pathDefaults:
+  record: yes
+  recordPath: /tmp/buftest/rec/%path/%Y-%m-%d_%H-%M-%S-%f
+  recordFormat: fmp4
+  recordSegmentDuration: 10s
+  recordDeleteAfter: 60s
+paths:
+  cam:
+    runOnAvailable: ./b_ytleg.sh   # mediamtx is started from ~/buftest
+    runOnAvailableRestart: yes
