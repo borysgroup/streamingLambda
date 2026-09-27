@@ -114,3 +114,29 @@ loop, the way `device.py` wraps ffmpeg.
 `cam-syyd` has been live 72.9 % of the time since it came online on Aug 19. The other five were live 98.5–99.9 % of the time since Aug 12. Only
 104 of its 142 broadcasts started at a cron reboot, and it regularly dropped off for most of an 8 h window, then came back at the next reboot. So its
 WiFi problem is long-standing, which matches the `brcmf_sdio` errors, and it is not caused by option A.
+
+### 8 h rerun on `cam-y5hk`: 0 restarts
+
+[`scripts/longrun_a2.sh`](scripts/longrun_a2.sh) ran A live to `cam-y5hk`'s broadcast from 05:02 MDT on 26 Sep until the 13:00 cron reboot. `cam-y5hk`
+has no `brcmf_sdio` errors. The script restarts A if the frame count stops rising or the process exits, and once a minute it logs the same numbers as
+before. Every 5 min it takes a still, requested from the Pi itself ([`data/longrun2_option_a_y5hk.csv`](data/longrun2_option_a_y5hk.csv),
+[`plot_longrun.py`](plot_longrun.py)).
+
+![longrun2](longrun2.png)
+
+| | A, 8 h |
+|---|---|
+| Logged / restarts | 05:02:55–12:59:32, **0 restarts** |
+| Frames sent | 429,750 = 15.0 fps overall; every 1-min interval was 14.7–15.3 fps |
+| Stills (every 5 min, on the Pi) | 95/95 OK, median 0.044 s, max 0.12 s |
+| CPU / temperature / throttling | mean 16.0 % (max 18 %) / 52–55 °C / 0x0 throughout |
+| MemAvailable | 202 MB at start, ~170 MB after 30 min, 161 MB at the end (production on this camera: 172 MB after 8 h) |
+| YouTube health, polled each minute 05:02–07:00 | 117/117 "good" (one more poll failed on the runner with an SSL error) |
+| YouTube archive of the broadcast | 7 h 58 m 44 s of a 7 h 59 m 39 s broadcast |
+
+- **YouTube saw an unbroken 8 h stream too.** The four production cameras that archived their full 05:00–13:00 broadcast have 7 h 58 m 50 s–56 s.
+  A has about 10 s less, from the handover from `device.py` at 05:01. In the same window, production on `cam-7yvn` archived only 3 h 50 m
+  ([`data/longrun2_youtube_archive.csv`](data/longrun2_youtube_archive.csv), [`data/longrun2_youtube_health.csv`](data/longrun2_youtube_health.csv)).
+- MemAvailable drifted down about 2 MB/h after 07:30 (175 → 161 MB). That is harmless with the 8 h reboot but worth watching in a run without it.
+- Not tested: running past 8 h (the ac-dev-lab fork reached 11 h), and the restart path, since this run never needed it. The journal is volatile,
+  so kernel logs from the run were lost at the reboot.
