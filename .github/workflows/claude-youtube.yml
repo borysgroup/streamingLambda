@@ -52,10 +52,6 @@ jobs:
           YOUTUBE_TOKEN_PICKLE_B64: ${{ secrets.YOUTUBE_TOKEN_PICKLE_B64 }}
           # Repo secret: upload + read only, the same one every @claude run gets.
           YOUTUBE_UPLOAD_TOKEN_PICKLE_B64: ${{ secrets.YOUTUBE_UPLOAD_TOKEN_PICKLE_B64 }}
-          # Older full-scope (youtube) token the Lambda era left in repo secrets;
-          # channel unconfirmed (the code names AC Hardware Streams). Kept out of
-          # plain @claude runs because it can delete.
-          GOOGLE_OAUTH_TOKEN_PICKLE_B64: ${{ secrets.GOOGLE_OAUTH_TOKEN_PICKLE_B64 }}
           BASH_DEFAULT_TIMEOUT_MS: "900000"
           BASH_MAX_TIMEOUT_MS: "3600000"
         with:
