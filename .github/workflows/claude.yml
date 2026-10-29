@@ -39,6 +39,8 @@ jobs:
     # https://github.com/ME-EN-372/me-en-372-machine-design-private/blob/main/docs/claude-yml-model-fallback.md.
     if: |
       github.event.sender.type != 'Bot' &&
+      # @claude-youtube also contains @claude; claude-youtube.yml handles it.
+      !contains(github.event.comment.body || github.event.review.body || format('{0} {1}', github.event.issue.title, github.event.issue.body), '@claude-youtube') &&
       ((github.event_name == 'issue_comment' && contains(github.event.comment.body, '@claude')) ||
        (github.event_name == 'pull_request_review_comment' && contains(github.event.comment.body, '@claude')) ||
        (github.event_name == 'pull_request_review' && contains(github.event.review.body, '@claude')) ||
@@ -70,12 +72,14 @@ jobs:
       # Read-only access to the sgbaird/agent-staging drop box, for files staged
       # from other repos (see CLAUDE.md, "Receiving files from other repos").
       GH_READ_PAT_STAGING: ${{ secrets.GH_READ_PAT_STAGING }}
+      # Aurora PCL Hardware Streams, upload + read + analytics only (Google won't
+      # let it delete or edit). Full control is @claude-youtube only; see CLAUDE.md.
+      YOUTUBE_UPLOAD_TOKEN_PICKLE_B64: ${{ secrets.YOUTUBE_UPLOAD_TOKEN_PICKLE_B64 }}
       AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
       AWS_ACCOUNT_ID: ${{ secrets.AWS_ACCOUNT_ID }}
       AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
       AWS_REGION: ${{ secrets.AWS_REGION }}
       LAMBDA_FUNCTION_URL: ${{ secrets.LAMBDA_FUNCTION_URL }}
-      GOOGLE_OAUTH_TOKEN_PICKLE_B64: ${{ secrets.GOOGLE_OAUTH_TOKEN_PICKLE_B64 }}
 
       RPI_STREAM_CAM_HOSTNAME_0: ${{ secrets.RPI_STREAM_CAM_HOSTNAME_0 }}
       RPI_STREAM_CAM_HOSTNAME_1: ${{ secrets.RPI_STREAM_CAM_HOSTNAME_1 }}
@@ -116,7 +120,13 @@ jobs:
 
 
       - name: Connect to Tailscale
-        uses: tailscale/github-action@v2
+        # v2 installed Tailscale 1.42, which only took an OAuth secret as an auth
+        # key with TS_EXPERIMENT_OAUTH_AUTHKEY passed through `sudo -E`. The
+        # ubuntu-26.04 runners' sudo ignores -E, so every join failed with "oauth
+        # authkeys are in experimental status". v4 installs a current Tailscale
+        # that needs no flag. A failed join should still cost only Pi access.
+        continue-on-error: true
+        uses: tailscale/github-action@v4
         with:
           oauth-client-id: ${{ secrets.TS_OAUTH_CLIENT_ID }}
           oauth-secret: ${{ secrets.TS_OAUTH_SECRET }}
