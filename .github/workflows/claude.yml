@@ -120,10 +120,13 @@ jobs:
 
 
       - name: Connect to Tailscale
-        # A failed join (e.g. a revoked OAuth client) should cost the Pi access,
-        # not the whole run.
+        # v2 installed Tailscale 1.42, which only took an OAuth secret as an auth
+        # key with TS_EXPERIMENT_OAUTH_AUTHKEY passed through `sudo -E`. The
+        # ubuntu-26.04 runners' sudo ignores -E, so every join failed with "oauth
+        # authkeys are in experimental status". v4 installs a current Tailscale
+        # that needs no flag. A failed join should still cost only Pi access.
         continue-on-error: true
-        uses: tailscale/github-action@v2
+        uses: tailscale/github-action@v4
         with:
           oauth-client-id: ${{ secrets.TS_OAUTH_CLIENT_ID }}
           oauth-secret: ${{ secrets.TS_OAUTH_SECRET }}
