@@ -43,8 +43,28 @@ finished work stops landing.
 - Connect from a terminal:
 
    ```bash
-   ssh -o ConnectTimeout=20 -o StrictHostKeyChecking=no "${RPI_STREAM_CAM_USERNAME}@${RPI_STREAM_CAM_HOSTNAME}.${TAILNET_ID}.ts.net"
+   ssh -o ConnectTimeout=20 -o StrictHostKeyChecking=no -o LogLevel=ERROR "${RPI_STREAM_CAM_USERNAME_0}@${RPI_STREAM_CAM_HOSTNAME_0}.${TAILNET_ID}.ts.net"
    ```
+
+   Each camera has its own numbered slot of `RPI_STREAM_CAM_{HOSTNAME,USERNAME,PASSWORD}_<n>`
+   (there is no unsuffixed `RPI_STREAM_CAM_HOSTNAME`). All are tagged `tag:stream-cam-test`.
+   `LogLevel=ERROR` keeps OpenSSH's "Permanently added" warning from printing the full
+   MagicDNS name into the logs.
+
+   | Slot | Hardware | YouTube `CAM_NAME` / `WORKFLOW_NAME` |
+   | --- | --- | --- |
+   | `_0` | Pi Zero 2 W + Camera Module 3 | `picam-4yz0` / `aurora-4yz0` |
+   | `_1`–`_5` | Pi Zero 2 W + Camera Module 3 | `picam-<suffix>` / `aurora-<suffix>` for 7yvn, ca3u, syyd, y5hk, yubw (which slot is which isn't recorded) |
+   | `_6` | Pi 5 + HQ Camera (IMX477), 8–50 mm zoom; software x264 (a Pi 5 has no hardware H.264 encoder) | `picam-2wp0` / `Cataloging stage overhead` |
+
+   Slot `_6` came from BYU's Vertical Cloud Lab on 2026-11-10 (it was their OT-2 lid camera).
+   It runs the lab-patched picam client (`device.py` + `picam_source.py`, which also serves
+   stills at `http://127.0.0.1:8081/still.jpg` on the Pi), with a stall watchdog and a
+   scheduled-reboot timer instead of the root crontab. Its setup is documented in
+   vertical-cloud-lab/byu-vcl PR 234, `ot2-overhead-camera/lid-mount/camera/stream/README.md`.
+   Since the Lambda's `end` action and playlist matching are case-insensitive substring
+   matches on `WORKFLOW_NAME`, a new camera's `WORKFLOW_NAME` must not contain, or be
+   contained in, any existing one.
 
 - If the SSH flow prints a Tailscale login URL, send that URL to the user and wait for them to complete the auth step.
 - Do not hardcode hostnames, API keys, or other secrets. Use environment variables and never print secret values.
