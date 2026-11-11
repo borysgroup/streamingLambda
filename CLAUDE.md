@@ -74,6 +74,7 @@ finished work stops landing.
    matches on `WORKFLOW_NAME`, a new camera's `WORKFLOW_NAME` must not contain, or be
    contained in, any existing one.
 
+- Hands-on camera fixes (reseating a ribbon, power-cycling, remounting) need someone in the lab: tag Tim (`@timfaltermeier`) and Dan (`@markrobotsmith`).
 - If the SSH flow prints a Tailscale login URL, send that URL to the user and wait for them to complete the auth step.
 - Do not hardcode hostnames, API keys, or other secrets. Use environment variables and never print secret values.
 
