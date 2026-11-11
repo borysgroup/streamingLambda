@@ -6,10 +6,6 @@ __pycache__/
 # macOS Finder
 .DS_Store
 
-# Chalice deployment
-.chalice/deployments/
-.chalice/deployed/
-
 # Local system or test artifacts
 *.log
 *.pickle
