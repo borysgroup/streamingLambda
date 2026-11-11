@@ -48,6 +48,10 @@ finished work stops landing.
 
    Each camera has its own numbered slot of `RPI_STREAM_CAM_{HOSTNAME,USERNAME,PASSWORD}_<n>`
    (there is no unsuffixed `RPI_STREAM_CAM_HOSTNAME`). All are tagged `tag:stream-cam-test`.
+   Hostnames and passwords are secrets; usernames are repo **variables**, since GitHub masks
+   a secret wherever it appears as a substring and the values (`aurora`, `vcl`) would turn
+   every "aurora" or "vcl" in the logs into `***`. borysgroup/aurora-cloud-infra uses the
+   same names, slot numbering and split.
    `LogLevel=ERROR` keeps OpenSSH's "Permanently added" warning from printing the full
    MagicDNS name into the logs.
 

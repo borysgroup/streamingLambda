@@ -90,13 +90,16 @@ jobs:
       RPI_STREAM_CAM_HOSTNAME_5: ${{ secrets.RPI_STREAM_CAM_HOSTNAME_5 }}
       RPI_STREAM_CAM_HOSTNAME_6: ${{ secrets.RPI_STREAM_CAM_HOSTNAME_6 }}
 
-      RPI_STREAM_CAM_USERNAME_0: ${{ secrets.RPI_STREAM_CAM_USERNAME_0 }}
-      RPI_STREAM_CAM_USERNAME_1: ${{ secrets.RPI_STREAM_CAM_USERNAME_1 }}
-      RPI_STREAM_CAM_USERNAME_2: ${{ secrets.RPI_STREAM_CAM_USERNAME_2 }}
-      RPI_STREAM_CAM_USERNAME_3: ${{ secrets.RPI_STREAM_CAM_USERNAME_3 }}
-      RPI_STREAM_CAM_USERNAME_4: ${{ secrets.RPI_STREAM_CAM_USERNAME_4 }}
-      RPI_STREAM_CAM_USERNAME_5: ${{ secrets.RPI_STREAM_CAM_USERNAME_5 }}
-      RPI_STREAM_CAM_USERNAME_6: ${{ secrets.RPI_STREAM_CAM_USERNAME_6 }}
+      # Usernames are repo *variables*, not secrets (as in vertical-cloud-lab/byu-vcl):
+      # GitHub masks a secret wherever it appears as a substring, and the values
+      # ("aurora", "vcl") would rewrite any "aurora"/"vcl" in the logs as "***".
+      RPI_STREAM_CAM_USERNAME_0: ${{ vars.RPI_STREAM_CAM_USERNAME_0 }}
+      RPI_STREAM_CAM_USERNAME_1: ${{ vars.RPI_STREAM_CAM_USERNAME_1 }}
+      RPI_STREAM_CAM_USERNAME_2: ${{ vars.RPI_STREAM_CAM_USERNAME_2 }}
+      RPI_STREAM_CAM_USERNAME_3: ${{ vars.RPI_STREAM_CAM_USERNAME_3 }}
+      RPI_STREAM_CAM_USERNAME_4: ${{ vars.RPI_STREAM_CAM_USERNAME_4 }}
+      RPI_STREAM_CAM_USERNAME_5: ${{ vars.RPI_STREAM_CAM_USERNAME_5 }}
+      RPI_STREAM_CAM_USERNAME_6: ${{ vars.RPI_STREAM_CAM_USERNAME_6 }}
 
       RPI_STREAM_CAM_PASSWORD_0: ${{ secrets.RPI_STREAM_CAM_PASSWORD_0 }}
       RPI_STREAM_CAM_PASSWORD_1: ${{ secrets.RPI_STREAM_CAM_PASSWORD_1 }}
