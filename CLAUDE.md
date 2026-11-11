@@ -39,7 +39,7 @@ finished work stops landing.
 ## Tailscale SSH
 
 - If a task depends on SSH access and it is not working, stop and report back instead of committing speculative changes.
-- Make sure the runner is on the tailnet first. This repo already wires that up in `.github/workflows/copilot-setup-steps.yml` with `tailscale/github-action@v2`.
+- Make sure the runner is on the tailnet first. This repo already wires that up in `.github/workflows/claude.yml` (and `copilot-setup-steps.yml`) with `tailscale/github-action@v4`.
 - Connect from a terminal:
 
    ```bash
