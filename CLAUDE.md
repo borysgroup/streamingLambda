@@ -39,7 +39,7 @@ finished work stops landing.
 ## Tailscale SSH
 
 - If a task depends on SSH access and it is not working, stop and report back instead of committing speculative changes.
-- Make sure the runner is on the tailnet first. This repo already wires that up in `.github/workflows/copilot-setup-steps.yml` with `tailscale/github-action@v2`.
+- Make sure the runner is on the tailnet first. This repo already wires that up in `.github/workflows/claude.yml` (and `copilot-setup-steps.yml`) with `tailscale/github-action@v4`.
 - Connect from a terminal:
 
    ```bash
@@ -58,7 +58,11 @@ finished work stops landing.
    | Slot | Hardware | YouTube `CAM_NAME` / `WORKFLOW_NAME` |
    | --- | --- | --- |
    | `_0` | Pi Zero 2 W + Camera Module 3 | `picam-4yz0` / `aurora-4yz0` |
-   | `_1`–`_5` | Pi Zero 2 W + Camera Module 3 | `picam-<suffix>` / `aurora-<suffix>` for 7yvn, ca3u, syyd, y5hk, yubw (which slot is which isn't recorded) |
+   | `_1` | Pi Zero 2 W + Camera Module 3 | `picam-7yvn` / `aurora-7yvn` |
+   | `_2` | Pi Zero 2 W + Camera Module 3 | `picam-ca3u` / `aurora-ca3u` |
+   | `_3` | Pi Zero 2 W + Camera Module 3 | `picam-syyd` / `aurora-syyd` |
+   | `_4` | Pi Zero 2 W + Camera Module 3 | `picam-y5hk` / `aurora-y5hk` |
+   | `_5` | Pi Zero 2 W + Camera Module 3 | `picam-yubw` / `aurora-yubw` |
    | `_6` | Pi 5 + HQ Camera (IMX477), 8–50 mm zoom; software x264 (a Pi 5 has no hardware H.264 encoder) | `picam-2wp0` / `Cataloging stage overhead` |
 
    Slot `_6` came from BYU's Vertical Cloud Lab on 2026-11-10 (it was their OT-2 lid camera).
