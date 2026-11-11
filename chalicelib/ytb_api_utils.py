@@ -159,6 +159,8 @@ def create_broadcast_and_bind_stream(cam_name: str,workflow_name: str, privacy_s
             break
 
     if not playlist_id:
+        # New playlists are always private, whatever privacy_status the broadcast
+        # uses (the cameras stream unlisted). Issue No. 25.
         playlist_response = YOUTUBE.playlists().insert(
             part="snippet,status",
             body={
@@ -167,7 +169,7 @@ def create_broadcast_and_bind_stream(cam_name: str,workflow_name: str, privacy_s
                     "description": f"Livestreams for device {workflow_name}"
                 },
                 "status": {
-                    "privacyStatus": privacy_status
+                    "privacyStatus": "private"
                 }
             }
         ).execute()
