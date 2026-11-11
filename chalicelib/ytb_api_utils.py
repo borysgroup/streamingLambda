@@ -173,25 +173,30 @@ def create_broadcast_and_bind_stream(cam_name: str,workflow_name: str, privacy_s
         ).execute()
         playlist_id = playlist_response["id"]
 
-    # Attempt to add to playlist
-    try:
-        YOUTUBE.playlistItems().insert(
-            part="snippet",
-            body={
-                "snippet": {
-                    "playlistId": playlist_id,
-                    "resourceId": {
-                        "kind": "youtube#video",
-                        "videoId": video_id
+    # Attempt to add to playlist. A playlist created seconds ago rejects inserts with
+    # 409 SERVICE_UNAVAILABLE for a while (a new camera's first stream), so retry.
+    for attempt in range(4):
+        try:
+            YOUTUBE.playlistItems().insert(
+                part="snippet",
+                body={
+                    "snippet": {
+                        "playlistId": playlist_id,
+                        "resourceId": {
+                            "kind": "youtube#video",
+                            "videoId": video_id
+                        }
                     }
                 }
-            }
-        ).execute()
-        playlist_add_status = "added"
-        print(f"[✓] Broadcast {video_id} successfully added to playlist {playlist_id}.")
-    except Exception as e:
-        playlist_add_status = f"failed - {e}"
-        print(f"[⚠] Failed to add broadcast {video_id} to playlist {playlist_id}: {e}")
+            ).execute()
+            playlist_add_status = "added"
+            print(f"[✓] Broadcast {video_id} successfully added to playlist {playlist_id}.")
+            break
+        except Exception as e:
+            playlist_add_status = f"failed - {e}"
+            print(f"[⚠] Attempt {attempt + 1} to add broadcast {video_id} to playlist {playlist_id} failed: {e}")
+            if attempt < 3:
+                time.sleep(5)
 
 
     return {
